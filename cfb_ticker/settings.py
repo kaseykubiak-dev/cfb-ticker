@@ -47,6 +47,17 @@ class Settings:
         self.favorite_team_ids = sorted(favs)
         return result
 
+    @property
+    def auto_follow(self) -> bool:
+        """Fill empty slots with favorites' live games and drop finals after a grace period."""
+        v = self._s.value("games/auto_follow", True)
+        return v in (True, "true", "True", 1, "1")
+
+    @auto_follow.setter
+    def auto_follow(self, enabled: bool) -> None:
+        self._s.setValue("games/auto_follow", bool(enabled))
+        self._s.sync()
+
     # ---- window ------------------------------------------------------------
 
     @property

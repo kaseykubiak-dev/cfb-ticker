@@ -12,7 +12,8 @@ Field mapping (verified against a live week 1 response, saved as
 - ``status.type.state`` is ``pre`` / ``in`` / ``post``; ``post`` maps to ``final``.
 - ``competitions[0].situation`` carries ``downDistanceText``, ``possession`` (a team
   id, not a home/away flag), ``isRedZone``. Any of them can be absent mid-play.
-- ``competitors[].score`` is a string.
+- ``competitors[].score`` is a string; ``competitors[].curatedRank.current`` is 99 when unranked.
+- ``competitions[0].broadcast`` is a plain network string ("SECN+"); ``situation.lastPlay.text`` is play-by-play.
 """
 
 from __future__ import annotations
@@ -109,17 +110,30 @@ def _parse_event(event: dict[str, Any], fetched_at: datetime) -> GameState:
         red_zone=bool(situation.get("isRedZone", False)),
         start_time=_parse_date(event["date"]),
         fetched_at=fetched_at,
+        home_timeouts=_int_or_none(situation.get("homeTimeouts")),
+        away_timeouts=_int_or_none(situation.get("awayTimeouts")),
+        last_play=((situation.get("lastPlay") or {}).get("text") or None),
+        broadcast=(comp.get("broadcast") or None),
     )
 
 
 def _team(competitor: dict[str, Any]) -> TeamInfo:
     team = competitor["team"]
+    rank = _int_or_none((competitor.get("curatedRank") or {}).get("current"))
     return TeamInfo(
         team_id=str(team["id"]),
         abbreviation=str(team.get("abbreviation") or team.get("shortDisplayName") or "???"),
         name=str(team.get("shortDisplayName") or team.get("displayName") or ""),
         color=team.get("color") or None,
+        rank=rank if rank is not None and 1 <= rank <= 25 else None,  # ESPN uses 99 for unranked
     )
+
+
+def _int_or_none(raw: Any) -> int | None:
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _score(raw: Any) -> int:

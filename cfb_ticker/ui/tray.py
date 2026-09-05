@@ -37,6 +37,7 @@ class TrayIcon(QObject):
     placement_requested = Signal(str)  # "floating" | "appbar"
     screen_requested = Signal(str)  # QScreen.name()
     startup_toggled = Signal(bool)
+    auto_follow_toggled = Signal(bool)
     quit_requested = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
@@ -67,8 +68,12 @@ class TrayIcon(QObject):
 
         self.startup_action = QAction("Start with Windows", self.menu, checkable=True)
         self.startup_action.toggled.connect(self.startup_toggled)
+        self.auto_follow_action = QAction("Auto-follow favorites", self.menu, checkable=True)
+        self.auto_follow_action.setToolTip("Fill empty rows with favorites' live games; drop finals after ten minutes")
+        self.auto_follow_action.toggled.connect(self.auto_follow_toggled)
 
         self.menu.addAction(self.pick_action)
+        self.menu.addAction(self.auto_follow_action)
         self.menu.addAction(self.toggle_action)
         self.menu.addAction(self.refresh_action)
         self.menu.addSeparator()
@@ -97,6 +102,11 @@ class TrayIcon(QObject):
         self.startup_action.blockSignals(True)
         self.startup_action.setChecked(enabled)
         self.startup_action.blockSignals(False)
+
+    def set_auto_follow(self, enabled: bool) -> None:
+        self.auto_follow_action.blockSignals(True)
+        self.auto_follow_action.setChecked(enabled)
+        self.auto_follow_action.blockSignals(False)
 
     def set_placement(self, mode: str) -> None:
         act = self._placement_actions.get(mode)

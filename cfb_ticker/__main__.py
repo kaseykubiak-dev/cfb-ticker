@@ -11,12 +11,13 @@ import argparse
 import logging
 import signal
 import sys
+from datetime import UTC, datetime
 
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication, QDialog
 
-from . import startup
+from . import autofollow, startup
 from .data.espn import EspnProvider
 from .poller import ScorePoller
 from .settings import MAX_GAMES, Settings
@@ -38,6 +39,7 @@ class App:
         self.window = TickerWindow(ids)
         self.tray = TrayIcon()
         self._picker: PickerDialog | None = None
+        self._final_since: dict[str, datetime] = {}
 
         self.poller.games_updated.connect(self._on_games)
         self.poller.fetch_failed.connect(self.window.on_fetch_failed)
@@ -49,6 +51,7 @@ class App:
         self.tray.placement_requested.connect(self.set_placement)
         self.tray.screen_requested.connect(self.set_dock_screen)
         self.tray.startup_toggled.connect(self.set_startup)
+        self.tray.auto_follow_toggled.connect(self.set_auto_follow)
         self.tray.quit_requested.connect(QApplication.instance().quit)
 
         qapp = QGuiApplication.instance()
@@ -61,6 +64,7 @@ class App:
         self.tray.set_placement(mode)
         self._refresh_screens()
         self.tray.set_startup(startup.is_enabled())
+        self.tray.set_auto_follow(self.settings.auto_follow)
         self.window.show()
         self.tray.show()
         self.tray.set_visible_state(True)
@@ -73,8 +77,26 @@ class App:
     # ---- slots ---------------------------------------------------------
 
     def _on_games(self, games) -> None:
+        now = datetime.now(UTC)
+        by_id = {g.game_id: g for g in games}
+        autofollow.track_finals(by_id, self._final_since, now)
+        if self.settings.auto_follow:
+            planned = autofollow.plan_selection(
+                self.settings.game_ids, by_id, set(self.settings.favorite_team_ids), self._final_since, now
+            )
+            if planned != self.settings.game_ids:
+                logging.getLogger(__name__).info("auto-follow: %s -> %s", self.settings.game_ids, planned)
+                self.settings.game_ids = planned
+                self.poller.set_game_ids(planned)
+                self.window.set_game_ids(planned)
         self.window.on_games(games)
         self.tray.set_summary(self.window.summary())
+
+    def set_auto_follow(self, enabled: bool) -> None:
+        self.settings.auto_follow = enabled
+        self.tray.set_auto_follow(enabled)
+        if enabled and self.poller.latest:
+            self._on_games(self.poller.all_games())
 
     def _on_moved(self, pos: QPoint) -> None:
         self.settings.window_pos = pos

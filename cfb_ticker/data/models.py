@@ -15,7 +15,8 @@ class TeamInfo:
     team_id: str
     abbreviation: str  # "TENN"
     name: str  # "Tennessee"
-    color: str | None  # hex without '#', e.g. "ff8200"; rendered Phase 3
+    color: str | None  # hex without '#', e.g. "ff8200"
+    rank: int | None = None  # AP poll rank 1-25; None when unranked
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +35,10 @@ class GameState:
     red_zone: bool
     start_time: datetime
     fetched_at: datetime
+    home_timeouts: int | None = None  # only meaningful while live
+    away_timeouts: int | None = None
+    last_play: str | None = None  # play-by-play text of the most recent play
+    broadcast: str | None = None  # "SECN+", "ABC"
 
     @property
     def is_live(self) -> bool:

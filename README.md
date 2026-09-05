@@ -10,7 +10,9 @@ Two placement modes. Floating, where you drag it anywhere and it stays on top of
 
 ## What it shows
 
-Each row is one game: away team and score, home team and score, the clock and quarter (or Halftime, Final, or kickoff time), and the current down and distance. A small orange marker points at the team with possession; it turns red in the red zone. Team abbreviations take the team's own color, lightened when the color is too dark to read on the strip.
+Each row is one game: away team and score, home team and score, the clock and quarter (or Halftime, Final, or kickoff time), and the current down and distance. A small orange marker points at the team with possession; it turns red in the red zone. Team abbreviations take the team's own color, lightened when the color is too dark to read on the strip, and ranked teams carry their AP rank.
+
+While a game is live, a score that just changed flashes for a moment so a glance tells you something happened. Hovering the row shows the last play. Before kickoff the down-and-distance slot shows the network instead (ABC, SECN+), and finished games dim so the live ones stand out.
 
 If the feed stops answering, the last known score stays up and a small "stale" tag appears after sixty seconds, so you always know whether you are looking at live data.
 
@@ -27,6 +29,7 @@ The first launch shows an empty strip. Right-click it, or the tray icon, and cho
 Everything lives in the right-click menu, which is the same whether you right-click the strip or the tray icon (the small football in the notification area).
 
 - **Pick games...** opens today's slate, grouped into Live, Upcoming and Final, with a Favorites group at the top for any game involving a team you have starred. Check up to two games; the first one you check is the top row. Add favorite teams on the left side of the same dialog.
+- **Auto-follow favorites** (on by default) fills an empty row with a favorite team's game when it goes live, and drops a game ten minutes after it ends. It never replaces a game you picked that is still live or upcoming. Star a few teams in the picker and the strip runs a Saturday on its own.
 - **Hide ticker / Show ticker** does what it says. The tray icon stays so you can bring it back.
 - **Placement** switches between Floating and Docked to taskbar edge. Docked mode reserves screen space the way the taskbar itself does. If you have more than one monitor, a "Dock on screen" submenu appears to choose which one.
 - **Start with Windows** adds or removes the ticker from your startup apps (it uses the standard per-user Run key, so it also shows up in Task Manager's Startup tab, where you can turn it off without the app).

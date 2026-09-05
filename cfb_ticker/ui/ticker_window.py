@@ -25,6 +25,9 @@ STYLESHEET = """
 QLabel { color: #e8e8e8; font-family: "Segoe UI", sans-serif; font-size: 13px; }
 #teamName { font-weight: 600; letter-spacing: 0.5px; }
 #score { font-size: 15px; font-weight: 700; min-width: 20px; }
+#score[flash="true"] { color: #ffd166; }
+#gameRow[final="true"] QLabel { color: #7d8590; }
+#gameRow[final="true"] #score { color: #9aa4b1; }
 #possession { color: #ffb347; font-size: 9px; }
 #possession[redZone="true"] { color: #ff6b6b; }
 #at, #separator { color: #5c6470; }
