@@ -69,6 +69,20 @@ class Settings:
         self._s.setValue("window/placement", mode)
         self._s.sync()
 
+    @property
+    def appbar_screen(self) -> str | None:
+        """QScreen.name() of the monitor the bar docks to; None means the primary screen."""
+        v = self._s.value("window/appbar_screen")
+        return str(v) if v else None
+
+    @appbar_screen.setter
+    def appbar_screen(self, name: str | None) -> None:
+        if name:
+            self._s.setValue("window/appbar_screen", name)
+        else:
+            self._s.remove("window/appbar_screen")
+        self._s.sync()
+
 
 def _str_list(raw: object) -> list[str]:
     """QSettings hands back a list, a single str, or None depending on how many were stored."""

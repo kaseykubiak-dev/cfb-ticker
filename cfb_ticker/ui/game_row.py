@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from ..data.models import GameState
+from .colors import readable_on_dark
 
 POSSESSION_MARK = "◀"  # black left-pointing triangle, points at the team with the ball
 DASH = "–"
@@ -88,6 +89,9 @@ class GameRow(QWidget):
     def update_game(self, game: GameState) -> None:
         self.away_name.setText(game.away.abbreviation)
         self.home_name.setText(game.home.abbreviation)
+        # Team color accent on the abbreviation, lightened so dark brands stay legible.
+        self.away_name.setStyleSheet(f"color: {readable_on_dark(game.away.color)};")
+        self.home_name.setStyleSheet(f"color: {readable_on_dark(game.home.color)};")
         self.away_score.setText(str(game.away_score))
         self.home_score.setText(str(game.home_score))
         self.clock.setText(clock_text(game))
@@ -100,8 +104,12 @@ class GameRow(QWidget):
         self.away_poss.setText(POSSESSION_MARK if show_situation and game.possession == "away" else "")
         self.home_poss.setText(POSSESSION_MARK if show_situation and game.possession == "home" else "")
         self.situation.setText((game.down_distance or DASH) if show_situation else "")
-        self.situation.setProperty("redZone", show_situation and game.red_zone)
+        red = show_situation and game.red_zone
+        self.situation.setProperty("redZone", red)
         self._repolish(self.situation)
+        for marker in (self.away_poss, self.home_poss):
+            marker.setProperty("redZone", red)
+            self._repolish(marker)
 
     def set_stale(self, stale: bool, tooltip: str = "") -> None:
         self.stale.setText("stale" if stale else "")
