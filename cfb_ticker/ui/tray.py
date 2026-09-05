@@ -36,6 +36,7 @@ class TrayIcon(QObject):
     refresh_requested = Signal()
     placement_requested = Signal(str)  # "floating" | "appbar"
     screen_requested = Signal(str)  # QScreen.name()
+    startup_toggled = Signal(bool)
     quit_requested = Signal()
 
     def __init__(self, parent: QObject | None = None) -> None:
@@ -64,12 +65,16 @@ class TrayIcon(QObject):
         self.screen_menu = QMenu("Dock on screen", self.menu)
         self._screen_group = QActionGroup(self.screen_menu)
 
+        self.startup_action = QAction("Start with Windows", self.menu, checkable=True)
+        self.startup_action.toggled.connect(self.startup_toggled)
+
         self.menu.addAction(self.pick_action)
         self.menu.addAction(self.toggle_action)
         self.menu.addAction(self.refresh_action)
         self.menu.addSeparator()
         self.menu.addMenu(self.placement_menu)
         self.menu.addMenu(self.screen_menu)
+        self.menu.addAction(self.startup_action)
         self.menu.addSeparator()
         self.menu.addAction(self.quit_action)
 
@@ -86,6 +91,12 @@ class TrayIcon(QObject):
 
     def set_summary(self, text: str) -> None:
         self.icon.setToolTip(f"CFB Ticker\n{text}" if text else "CFB Ticker")
+
+    def set_startup(self, enabled: bool) -> None:
+        """Reflect the registry state without re-emitting startup_toggled."""
+        self.startup_action.blockSignals(True)
+        self.startup_action.setChecked(enabled)
+        self.startup_action.blockSignals(False)
 
     def set_placement(self, mode: str) -> None:
         act = self._placement_actions.get(mode)

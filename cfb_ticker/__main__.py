@@ -16,6 +16,7 @@ from PySide6.QtCore import QPoint
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication, QDialog
 
+from . import startup
 from .data.espn import EspnProvider
 from .poller import ScorePoller
 from .settings import MAX_GAMES, Settings
@@ -47,6 +48,7 @@ class App:
         self.tray.refresh_requested.connect(self.poller.poll_now)
         self.tray.placement_requested.connect(self.set_placement)
         self.tray.screen_requested.connect(self.set_dock_screen)
+        self.tray.startup_toggled.connect(self.set_startup)
         self.tray.quit_requested.connect(QApplication.instance().quit)
 
         qapp = QGuiApplication.instance()
@@ -58,6 +60,7 @@ class App:
         self.window.set_placement(mode, self.settings.appbar_screen, self.settings.window_pos)
         self.tray.set_placement(mode)
         self._refresh_screens()
+        self.tray.set_startup(startup.is_enabled())
         self.window.show()
         self.tray.show()
         self.tray.set_visible_state(True)
@@ -91,6 +94,13 @@ class App:
         self.settings.placement = mode
         self.window.set_placement(mode, self.settings.appbar_screen, self.settings.window_pos)
         self.tray.set_placement(mode)
+
+    def set_startup(self, enabled: bool) -> None:
+        try:
+            startup.set_enabled(enabled)
+        except OSError as exc:
+            logging.getLogger(__name__).error("start-with-Windows toggle failed: %s", exc)
+        self.tray.set_startup(startup.is_enabled())
 
     def set_dock_screen(self, screen_name: str) -> None:
         self.settings.appbar_screen = screen_name
