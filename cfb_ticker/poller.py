@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
+from datetime import UTC, datetime
 
 from PySide6.QtCore import QObject, QThread, QTimer, Signal
 
-from .data import espn
 from .data.models import GameState
+from .data.provider import ScoreProvider
 
 log = logging.getLogger(__name__)
 
@@ -49,9 +50,13 @@ class _FetchWorker(QThread):
     finished_ok = Signal(list)
     failed = Signal(str)
 
+    def __init__(self, provider: ScoreProvider, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._provider = provider
+
     def run(self) -> None:  # runs on the worker thread
         try:
-            self.finished_ok.emit(espn.fetch_scoreboard())
+            self.finished_ok.emit(self._provider.fetch_scoreboard())
         except Exception as exc:  # noqa: BLE001 - anything here must become a UI state, not a crash
             self.failed.emit(str(exc))
 
@@ -62,7 +67,7 @@ class ScorePoller(QObject):
     games_updated = Signal(list)  # list[GameState], the full scoreboard
     fetch_failed = Signal(str)
 
-    def __init__(self, game_ids: list[str], parent: QObject | None = None) -> None:
+    def __init__(self, provider: ScoreProvider, game_ids: list[str], parent: QObject | None = None) -> None:
         super().__init__(parent)
         self.game_ids = list(game_ids)
         self._timer = QTimer(self)
@@ -71,11 +76,12 @@ class ScorePoller(QObject):
         # One worker for the life of the poller; QThread.start() may be called again once
         # run() has returned. Creating a fresh one per poll and deleteLater-ing it left a
         # dead wrapper behind, and the next isRunning() call raised (found on first run).
-        self._worker = _FetchWorker(self)
+        self._worker = _FetchWorker(provider, self)
         self._worker.finished_ok.connect(self._on_ok)
         self._worker.failed.connect(self._on_failed)
         self._backoff_ms: int | None = None
         self.latest: dict[str, GameState] = {}
+        self.last_ok: datetime | None = None
 
     def start(self) -> None:
         self.poll_now()
@@ -89,14 +95,25 @@ class ScorePoller(QObject):
         if self._worker.isRunning():
             log.debug("poll skipped: previous fetch still running")
             return
+        self._timer.stop()
         self._worker.start()
+
+    def set_game_ids(self, game_ids: list[str]) -> None:
+        """Change the selection; the next interval follows the new games' status immediately."""
+        self.game_ids = list(game_ids)
+        if self.last_ok is not None and not self._worker.isRunning():
+            self._schedule(next_interval_ms(self.selected()))
 
     def selected(self) -> list[GameState | None]:
         return [self.latest.get(gid) for gid in self.game_ids]
 
+    def all_games(self) -> list[GameState]:
+        return list(self.latest.values())
+
     def _on_ok(self, games: list[GameState]) -> None:
         self._backoff_ms = None
         self.latest = {g.game_id: g for g in games}
+        self.last_ok = datetime.now(UTC)
         self.games_updated.emit(games)
         self._schedule(next_interval_ms(self.selected()))
 

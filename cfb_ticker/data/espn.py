@@ -40,6 +40,18 @@ class FetchError(RuntimeError):
     """Every host failed or returned something that was not a scoreboard."""
 
 
+class EspnProvider:
+    """ScoreProvider backed by the public scoreboard JSON."""
+
+    name = "espn"
+
+    def __init__(self) -> None:
+        self._session = requests.Session()
+
+    def fetch_scoreboard(self) -> list[GameState]:
+        return fetch_scoreboard(self._session)
+
+
 def fetch_scoreboard(session: requests.Session | None = None) -> list[GameState]:
     """Fetch today's FBS scoreboard and parse it. Raises FetchError on total failure."""
     sess = session or requests.Session()
